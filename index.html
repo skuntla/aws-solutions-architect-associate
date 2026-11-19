@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1220"><meta name="description" content="AWS SAA-C03 exam notes: service comparisons, traps, worked examples and quick decisions">
+<title>AWS Solutions Architect Associate | Exam Cheat Sheets</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#eaf0fc;background:#0b1220;line-height:1.6}
+*{box-sizing:border-box}body{margin:0}a{color:#8fc9ff}header{padding:46px 20px 26px;background:linear-gradient(135deg,#142d4c,#0b1220 65%);border-bottom:1px solid #2b405c}main,header>div{max-width:1100px;margin:auto}main{padding:22px 18px 80px}
+h1{font-size:clamp(2rem,5vw,3.35rem);letter-spacing:-.05em;line-height:1.1;margin:10px 0}h2{font-size:1.45rem;margin:0 0 12px}h3{font-size:1.05rem;margin:20px 0 6px;color:#c1dcff}.eyebrow{color:#7dc9ff;font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:.74rem}
+.muted,small{color:#a5b5c9}.lead{max-width:740px;color:#c5d2e4;font-size:1.05rem}nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 22px}nav a,.pill{background:#1a2b40;border:1px solid #334967;padding:7px 12px;border-radius:100px;text-decoration:none;color:#dcecff;font-size:.87rem}
+input{width:100%;background:#101e31;border:1px solid #39506e;border-radius:13px;color:white;padding:14px;font-size:1rem;outline:none}input:focus{border-color:#7ac3ff}
+section{margin:24px 0 30px;padding:24px;border:1px solid #263a53;background:#111c2b;border-radius:18px}section>p{color:#bed0e2}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.card{background:#17263b;border:1px solid #30435d;border-radius:13px;padding:16px}.card h3{margin:0 0 8px;color:#eef5ff}.card p{margin:7px 0}.tag{display:inline-block;background:#173c35;color:#89e5c3;border-radius:6px;padding:2px 7px;font-size:.77rem;font-weight:750}.warning{background:#463320;color:#ffd38b}.trap{background:#38283f;color:#f2b7ff}
+.table-wrap{overflow-x:auto}table{border-collapse:collapse;min-width:700px;width:100%;font-size:.91rem}th,td{border-bottom:1px solid #31445c;padding:11px;text-align:left;vertical-align:top}th{color:#91cfff;background:#162b43}tr:hover td{background:#17263b}
+.note{padding:14px 17px;background:#143047;border-left:3px solid #6dbdff;border-radius:8px;margin:15px 0}.note.warn{background:#342b24;border-color:#f3b76c}
+details{background:#17263b;border:1px solid #30435d;border-radius:12px;padding:12px 15px;margin:8px 0}summary{cursor:pointer;font-weight:700;color:#e5f2ff}li{margin:5px 0}code{color:#aee6d1;background:#253347;padding:2px 4px;border-radius:4px}
+footer{color:#9daec5;text-align:center;padding:35px 20px;border-top:1px solid #293d58}
+.hide{display:none!important}button{cursor:pointer;background:#254667;border:1px solid #496d96;color:#eaf5ff;border-radius:8px;padding:8px 12px}#count{color:#a2bed8;font-size:.85rem} 
+@media(max-width:600px){section{padding:16px}header{padding:30px 18px}h2{font-size:1.3rem}}
+</style></head><body>
+<header><div><div class="eyebrow">AWS SAA-C03 • Field Notes</div><h1>Solutions Architect<br>Associate Cheat Sheets</h1>
+<p class="lead">Simple explanations, decision rules, examples and exam traps. Built from our AWS practice-question discussions; designed for quick revision on mobile.</p>
+<nav><a href="#storage">S3 Storage</a><a href="#databases">Databases</a><a href="#decisions">Choose the Service</a><a href="#security">Security</a><a href="#networking">Networking</a><a href="#resilience">Resilience</a><a href="#quiz">Practice Scenarios</a></nav>
+<input id="search" type="search" aria-label="Search notes" placeholder="Search topics, e.g. RDS Proxy, Glacier, IAM…">
+<p id="count" role="status"></p></div></header>
+<main>
+<section id="storage" data-searchable><div class="eyebrow">01 / Storage</div><h2>S3 storage classes — the 0 / 30 / 90 / 180 rule</h2>
+<p>Choose by <strong>access frequency + retrieval speed + retention duration + resilience</strong>, not by storage price alone.</p>
+<div class="table-wrap"><table><thead><tr><th>Class</th><th>When to choose</th><th>Minimum billed storage</th><th>Exam trap</th></tr></thead><tbody>
+<tr><td><strong>S3 Standard</strong></td><td>Frequently accessed, short-lived data; analytics staging, active content</td><td>None</td><td>Higher per-GB rate can still yield lower total bill</td></tr>
+<tr><td><strong>S3 Intelligent-Tiering</strong></td><td>Unknown / changing access patterns</td><td>No overall minimum; optional archive-tier minimums apply</td><td>Monitoring fee for eligible objects; archive tiers can affect retrieval time</td></tr>
+<tr><td><strong>Standard-IA</strong></td><td>Rarely accessed but immediately needed; multi-AZ</td><td>30 days</td><td>Retrieval charges; 1-day data is a bad fit</td></tr>
+<tr><td><strong>One Zone-IA</strong></td><td>Re-creatable, infrequent data; single AZ acceptable</td><td>30 days</td><td>AZ loss can mean data loss</td></tr>
+<tr><td><strong>Glacier Instant Retrieval</strong></td><td>Rare archival reads that must be immediate</td><td>90 days</td><td>Instant ≠ frequently accessed; retrieval charges</td></tr>
+<tr><td><strong>Glacier Flexible Retrieval</strong></td><td>Archives; minutes-to-hours restore acceptable</td><td>90 days</td><td>Not direct immediate reads; restore first</td></tr>
+<tr><td><strong>Glacier Deep Archive</strong></td><td>Years-long compliance retention, rarely retrieved</td><td>180 days</td><td>Retrieval takes hours</td></tr>
+<tr><td><strong>S3 Express One Zone</strong></td><td>Very low latency / high request rates; single-AZ tradeoff</td><td>None</td><td>Not equivalent to multi-AZ Standard</td></tr>
+</tbody></table></div>
+<div class="note"><strong>Practice question:</strong> Intermediate analytics results retained 24 hours and read repeatedly → <strong>S3 Standard</strong>. Standard-IA charges a 30-day minimum plus retrieval; Glacier Instant a 90-day minimum plus retrieval.</div>
+<div class="grid">
+<div class="card"><h3>Lifecycle</h3><p>Transition older data to suitable tiers or expire it with lifecycle rules. Rules operate on a day basis; deletion is <strong>not guaranteed at the exact 24-hour mark</strong>.</p></div>
+<div class="card"><h3>EBS vs EFS vs S3</h3><p><strong>EBS:</strong> EC2 block volume, AZ-scoped. <strong>EFS:</strong> shared NFS filesystem for Linux, regional mount targets. <strong>S3:</strong> object storage via API, not normal POSIX disks.</p></div>
+<div class="card"><h3>Instance store</h3><p>High-performance temporary local storage. <strong>Ephemeral</strong>: not suitable for persistent state across instance loss.</p></div>
+</div></section>
+<section id="databases" data-searchable><div class="eyebrow">02 / Databases</div><h2>Relational databases, replicas and connection pooling</h2>
+<div class="grid">
+<div class="card"><h3>Aurora writer</h3><span class="tag">Writes</span><p>Primary writer executes INSERT/UPDATE/DELETE. More application servers do <strong>not</strong> automatically increase writer throughput.</p></div>
+<div class="card"><h3>Aurora read replicas</h3><span class="tag">Scale reads</span><p>Offload SELECT queries from the writer. A read replica does not accept normal application writes. Replication can lag.</p></div>
+<div class="card"><h3>RDS Proxy</h3><span class="tag">Connection pooling</span><p>Applications connect to the proxy; it keeps/reuses a smaller pool of actual database connections. Helps with spikes in <strong>connections</strong>, not inherently faster SQL writes.</p></div>
+<div class="card"><h3>Aurora Global Database</h3><span class="tag">Cross-Region</span><p>Provides cross-Region replication of an Aurora database for global reads/disaster recovery. Replication is at the <strong>database-cluster level</strong>, not selective per table.</p></div>
+<div class="card"><h3>DynamoDB Global Tables</h3><span class="tag">Multi-Region</span><p>Multi-Region replicated DynamoDB tables for globally distributed workloads. Moving an existing Aurora SQL app to DynamoDB may require substantial refactoring.</p></div>
+<div class="card"><h3>ElastiCache</h3><span class="tag">Fast repeat reads</span><p>Cache hot data such as catalog details, frequently accessed query results and sessions. A cache is <strong>not</strong> a default durable purchase-transaction queue.</p></div>
+</div>
+<h3>RDS Proxy: exact 10 vs 15 example</h3>
+<p>If the proxy's 10 database connections are all busy and 15 requests need them, 5 can wait temporarily for a free connection. If they wait longer than <code>ConnectionBorrowTimeout</code>, they fail. As earlier transactions finish, their connections are <strong>reused</strong> by waiting requests. It is not a durable queue and does not raise Aurora's intrinsic write capacity.</p>
+<div class="note warn"><strong>Exam nuance:</strong> If Aurora's <em>write CPU</em> is saturated, neither RDS Proxy nor extra EC2 instances solves the root write bottleneck. Diagnose connections vs queries vs application capacity.</div>
+<h3>Global gaming application scenario</h3>
+<p>Requirement: global <code>games</code> reference data, but <code>users</code> and <code>games_played</code> must remain regional; minimize changes from Aurora. <strong>Consider Aurora Global Database for a dedicated games database and regional Aurora databases for regional tables.</strong> Global Database replicates a whole database cluster—not a single table inside a shared cluster. Splitting tables into separate databases/clusters may itself require migration/refactoring.</p>
+</section>
+<section id="decisions" data-searchable><div class="eyebrow">03 / Architecture choices</div><h2>When to use what</h2>
+<div class="table-wrap"><table><thead><tr><th>Clue in question</th><th>Think</th><th>Why</th></tr></thead><tbody>
+<tr><td>Traffic spikes; work can run asynchronously</td><td>SQS + workers</td><td>Durable work buffer, decoupling, retries and DLQ</td></tr>
+<tr><td>Sudden connection storms to Aurora/RDS</td><td>RDS Proxy</td><td>Connection reuse / pooling</td></tr>
+<tr><td>Read-heavy relational queries</td><td>Read replicas</td><td>Offload SELECTs</td></tr>
+<tr><td>Repeated hot reads with fast responses</td><td>ElastiCache</td><td>Avoid repeated database lookups</td></tr>
+<tr><td>Application servers overloaded</td><td>EC2 Auto Scaling</td><td>Adds EC2 compute, not DB writers</td></tr>
+<tr><td>Fan-out to many subscribers</td><td>SNS</td><td>Pub/sub notifications and fan-out</td></tr>
+<tr><td>Buffered point-to-point tasks</td><td>SQS</td><td>Consumers pull messages; generally at-least-once delivery</td></tr>
+<tr><td>Continuous streaming ingestion and replay</td><td>Kinesis Data Streams</td><td>Streaming records with consumer processing</td></tr>
+<tr><td>Managed loading of streams into destinations</td><td>Amazon Data Firehose</td><td>Delivery/transform/buffer data to supported destinations</td></tr>
+<tr><td>DNS decisions, failover, routing policy</td><td>Route 53</td><td>DNS; not a CDN</td></tr>
+<tr><td>Cached global content, edge delivery</td><td>CloudFront</td><td>CDN; can use S3/ALB origin</td></tr>
+</tbody></table></div>
+<h3>Ticket purchase architecture</h3>
+<div class="note">Users → application/API → <strong>SQS</strong> (buffer purchase jobs) → <strong>EC2 Auto Scaling workers</strong> → <strong>RDS Proxy</strong> (pool DB connections) → <strong>Aurora writer</strong> (commit transaction).</div>
+<p>For actual sales, design idempotency, seat reservation/expiry, ordering, capacity limits, failure handling, and user confirmation carefully. SQS Standard can deliver duplicate or out-of-order messages.</p>
+</section>
+<section id="security" data-searchable><div class="eyebrow">04 / Security</div><h2>IAM and security fast decisions</h2>
+<div class="grid">
+<div class="card"><h3>IAM evaluation</h3><p><strong>Explicit deny wins</strong> over allow. Without applicable allow, default deny. Identity- and resource-based policies interact with SCPs and permission boundaries.</p></div>
+<div class="card"><h3>Role vs user vs group</h3><p><strong>Role:</strong> assumed temporary credentials, ideal for EC2/Lambda. <strong>User:</strong> identity. <strong>Group:</strong> policies for users, not assumable.</p></div>
+<div class="card"><h3>Security Group vs NACL</h3><p><strong>SG:</strong> stateful, allow rules at ENI. <strong>NACL:</strong> stateless, allow and deny rules at subnet boundary, evaluated in rule-number order.</p></div>
+<div class="card"><h3>KMS vs Secrets Manager</h3><p><strong>KMS:</strong> manage cryptographic keys and encryption operations. <strong>Secrets Manager:</strong> store and rotate passwords/API secrets.</p></div>
+<div class="card"><h3>CloudTrail / CloudWatch / Config</h3><p><strong>CloudTrail:</strong> API activity/audit. <strong>CloudWatch:</strong> metrics/logs/alarms. <strong>Config:</strong> resource configuration history/compliance.</p></div>
+<div class="card"><h3>Organizations / SCP</h3><p>Service control policies set account/OU <strong>permission ceilings</strong>; they do not grant permissions. Explicit deny overrides allowed actions.</p></div>
+</div></section>
+<section id="networking" data-searchable><div class="eyebrow">05 / Networking</div><h2>Networking, compute and delivery</h2>
+<div class="grid">
+<div class="card"><h3>ALB / NLB / GWLB</h3><p><strong>ALB:</strong> HTTP/HTTPS, path/host routing. <strong>NLB:</strong> L4 TCP/UDP/TLS, very high performance/static IP. <strong>GWLB:</strong> transparent third-party network appliances.</p></div>
+<div class="card"><h3>NAT Gateway / Internet Gateway</h3><p><strong>IGW:</strong> path for internet-routable public resources. <strong>NAT Gateway:</strong> lets private-subnet instances initiate outbound internet access via a public NAT gateway.</p></div>
+<div class="card"><h3>VPC endpoints</h3><p><strong>Gateway:</strong> S3 and DynamoDB. <strong>Interface:</strong> PrivateLink to many AWS services through ENIs; typically per-hour and data charges.</p></div>
+<div class="card"><h3>Route 53</h3><p>Weighted = traffic splitting; latency = lowest measured latency; failover = health-check based active/passive; geolocation = location-based routing.</p></div>
+<div class="card"><h3>Fargate vs EC2 launch type</h3><p><strong>Fargate:</strong> serverless container compute; no EC2 host management. <strong>EC2:</strong> manage underlying instances; more host-level control.</p></div>
+<div class="card"><h3>CloudFormation vs Beanstalk</h3><p><strong>CloudFormation:</strong> infrastructure as code. <strong>Elastic Beanstalk:</strong> managed app deployment environment that provisions underlying resources.</p></div>
+</div></section>
+<section id="resilience" data-searchable><div class="eyebrow">06 / Resilience</div><h2>Disaster recovery and cost</h2>
+<div class="table-wrap"><table><thead><tr><th>DR strategy</th><th>Cost</th><th>Typical recovery</th></tr></thead><tbody>
+<tr><td>Backup & Restore</td><td>Lowest</td><td>Slowest; rebuild from backups</td></tr><tr><td>Pilot Light</td><td>Low</td><td>Critical core running; scale rest after disaster</td></tr><tr><td>Warm Standby</td><td>Medium/high</td><td>Reduced-size working replica; scale up</td></tr><tr><td>Multi-site Active/Active</td><td>Highest</td><td>Fastest; both sites serving traffic</td></tr>
+</tbody></table></div>
+<p><strong>RPO</strong> = maximum tolerable data loss (time); <strong>RTO</strong> = maximum tolerable recovery time. Multi-AZ is for local availability; cross-Region designs target regional disaster recovery.</p>
+<div class="note"><strong>Cost clue:</strong> “Most cost-effective” means total cost, including retrieval, minimum storage duration, transfer and operational complexity—not just the lowest advertised storage price.</div>
+</section>
+<section id="quiz" data-searchable><div class="eyebrow">07 / Practice</div><h2>Rapid recall: open one answer at a time</h2>
+<details><summary>Analytics staging data accessed often, deleted after 24 hours. Which S3 class?</summary><p><strong>S3 Standard.</strong> No minimum duration or per-GB retrieval fee. IA and Glacier minimums penalize short-lived data.</p></details>
+<details><summary>Aurora has thousands of idle client connections. What helps?</summary><p><strong>RDS Proxy.</strong> Reuses and multiplexes database connections. It does not accelerate SQL execution.</p></details>
+<details><summary>Flash sale produces bursts of purchases that can be processed asynchronously. What helps?</summary><p><strong>SQS + scalable workers.</strong> Buffers work durably; consumers process as capacity allows. Design for idempotency and seat consistency.</p></details>
+<details><summary>SQL queries are 95% reads. The writer is overwhelmed. What helps?</summary><p><strong>Read replicas</strong> and routing read traffic to them, if eventual-consistency constraints allow.</p></details>
+<details><summary>Important archive, rarely retrieved, but retrieval must be immediate?</summary><p><strong>Glacier Instant Retrieval</strong> can fit when stored long enough to justify its 90-day minimum and retrieval pricing.</p></details>
+<details><summary>Explicit IAM deny conflicts with an allow. Who wins?</summary><p><strong>Explicit deny.</strong></p></details>
+<details><summary>Need to distribute HTTP traffic based on path?</summary><p><strong>Application Load Balancer (ALB).</strong></p></details>
+</section>
+<div class="note"><strong>How to extend these notes:</strong> add a new section to <code>index.html</code>, commit to <code>main</code>, and GitHub Pages can republish. Review live AWS documentation before relying on precise quotas, pricing or service updates.</div>
+</main><footer>Unofficial AWS exam study notes • Updated November 2026 • <a href="https://docs.aws.amazon.com/">AWS Documentation</a> • <a href="https://github.com/skuntla/aws-solutions-architect-associate">GitHub repository</a></footer>
+<script>
+const q=document.getElementById('search'), sections=[...document.querySelectorAll('section[data-searchable]')],count=document.getElementById('count');
+q.addEventListener('input',()=>{const term=q.value.trim().toLowerCase();let n=0;sections.forEach(s=>{const hit=!term||s.textContent.toLowerCase().includes(term);s.classList.toggle('hide',!hit);if(hit)n++});count.textContent=term?n+' sections match “'+q.value+'”':''});
+</script></body></html>
